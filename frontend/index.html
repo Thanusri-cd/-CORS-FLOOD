@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CORS URBAN | Safe Routes</title>
+
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: #172b4d;
+      background: #f3f6fb;
+    }
+
+    header {
+      background: #102a43;
+      color: white;
+      padding: 17px 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      font-size: 23px;
+      font-weight: bold;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-top: 5px;
+    }
+
+    .connection {
+      font-size: 12px;
+      background: #dcfce7;
+      color: #166534;
+      border-radius: 20px;
+      padding: 9px 12px;
+    }
+
+    main { padding: 20px; }
+
+    .heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 25px;
+      margin: 0 0 6px;
+    }
+
+    .muted {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 13px;
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .panel h2 {
+      font-size: 18px;
+      margin: 0 0 17px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin: 15px 0 7px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #1976d2;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .primary {
+      width: 100%;
+      color: white;
+      background: #1769d2;
+      margin-top: 15px;
+    }
+
+    .primary:hover { background: #1255ae; }
+
+    .secondary {
+      width: 100%;
+      color: #1769d2;
+      background: #eaf2ff;
+      margin-top: 9px;
+    }
+
+    .swap {
+      width: 100%;
+      margin-top: 8px;
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .sensor-dashboard {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin: 0 0 18px;
+    }
+
+    .sensor-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 15px;
+      min-width: 0;
+      box-shadow: 0 2px 7px rgba(15, 23, 42, 0.04);
+    }
+
+    .sensor-card .sensor-label {
+      color: #64748b;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .sensor-card .sensor-value {
+      font-size: 23px;
+      font-weight: bold;
+      color: #102a43;
+      overflow-wrap: anywhere;
+    }
+
+    .sensor-card .sensor-meta {
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 7px;
+      line-height: 1.4;
+    }
+
+    .sensor-card .sensor-state {
+      display: inline-block;
+      margin-top: 8px;
+      border-radius: 20px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .sensor-state.ok { background: #dcfce7; color: #166534; }
+    .sensor-state.warn { background: #fef3c7; color: #92400e; }
+    .sensor-state.danger { background: #fee2e2; color: #991b1b; }
+
+    .sensor-section-title {
+      margin: 0 0 10px;
+      font-size: 17px;
+    }
+
+    @media (max-width: 900px) {
+      .sensor-dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 500px) {
+      .sensor-dashboard { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .sensor-card { padding: 11px; }
+      .sensor-card .sensor-value { font-size: 19px; }
+    }
+
+    .map-panel {
+      padding: 12px;
+    }
+
+    .map-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 5px 7px 12px;
+    }
+
+    .map-heading h2 { margin: 0; }
+
+    #map {
+      width: 100%;
+      height: 590px;
+      border-radius: 9px;
+      background: #e2e8f0;
+      z-index: 1;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: #475569;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    .result {
+      margin-top: 18px;
+      padding: 13px;
+      border-radius: 9px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    .notice {
+      margin-top: 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #64748b;
+    }
+
+    .route-line {
+      color: #1769d2;
+      font-weight: bold;
+    }
+
+    @media (max-width: 850px) {
+      .workspace { grid-template-columns: 1fr; }
+      #map { height: 430px; }
+    }
+
+    @media (max-width: 500px) {
+      header { padding: 15px; }
+      main { padding: 12px; }
+      h1 { font-size: 21px; }
+      #map { height: 360px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <div class="brand">🌊 CORS URBAN</div>
+      <div class="subtitle">Location-based road safety</div>
+    </div>
+    <div class="connection" id="connection">Connecting to sensors...</div>
+  </header>
+
+  <main>
+    <div class="heading">
+      <div>
+        <h1>Find a Safe Route</h1>
+        <div class="muted">
+          Enter your starting point and destination.
+        </div>
+      </div>
+      <div class="muted">Live map and sensor locations</div>
+    </div>
+
+    <h2 class="sensor-section-title">📡 Hardware Sensor Readings</h2>
+    <section class="sensor-dashboard" aria-label="Live sensor readings">
+      <article class="sensor-card">
+        <div class="sensor-label">WATER LEVEL</div>
+        <div class="sensor-value" id="waterValue">— cm</div>
+        <div class="sensor-meta" id="waterMeta">Waiting for sensor data</div>
+        <span class="sensor-state" id="waterState">NO DATA</span>
+      </article>
+      <article class="sensor-card">
+        <div class="sensor-label">RAIN SENSOR</div>
+        <div class="sensor-value" id="rainValue">—</div>
+        <div class="sensor-meta" id="rainMeta">Waiting for sensor data</div>
+        <span class="sensor-state" id="rainState">NO DATA</span>
+      </article>
+      <article class="sensor-card">
+        <div class="sensor-label">WATER FLOW</div>
+        <div class="sensor-value" id="flowValue">— L/min</div>
+        <div class="sensor-meta" id="flowMeta">Optional flow sensor</div>
+        <span class="sensor-state" id="flowState">NO DATA</span>
+      </article>
+      <article class="sensor-card">
+        <div class="sensor-label">ESP32 / DATA LINK</div>
+        <div class="sensor-value" id="deviceValue">Offline</div>
+        <div class="sensor-meta" id="deviceMeta">No recent backend response</div>
+        <span class="sensor-state" id="deviceState">DISCONNECTED</span>
+      </article>
+    </section>
+
+    <div class="workspace">
+      <section class="panel">
+        <h2>🧭 Route Search</h2>
+
+        <label for="from">From</label>
+        <input id="from" placeholder="Enter starting address"
+               value="Bapatla, Andhra Pradesh">
+
+        <button class="secondary" id="gpsButton" type="button">
+          📍 Use My Current Location
+        </button>
+
+        <button class="swap" id="swapButton" type="button">
+          ⇅ Swap locations
+        </button>
+
+        <label for="to">To</label>
+        <input id="to" placeholder="Enter destination"
+               value="Guntur, Andhra Pradesh">
+
+        <button class="primary" id="findButton" type="button">
+          Find Safer Route →
+        </button>
+
+        <div class="result" id="result" aria-live="polite">
+          Enter your locations and select Find Safer Route.
+        </div>
+
+        <div class="notice">
+          Sensor readings are simulated. The route is provided by a
+          public routing service; it is not guaranteed to be flood-safe.
+          Sensor coverage is limited to monitored locations.
+        </div>
+      </section>
+
+      <section class="panel map-panel">
+        <div class="map-heading">
+          <h2>Live Map</h2>
+          <div class="legend">
+            <span><i class="dot" style="background:#1976d2"></i>Route</span>
+            <span><i class="dot" style="background:#16a34a"></i>Low risk</span>
+            <span><i class="dot" style="background:#f59e0b"></i>Warning</span>
+            <span><i class="dot" style="background:#dc2626"></i>High risk</span>
+          </div>
+        </div>
+        <div id="map"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const API = "http://127.0.0.1:5000/api";
+
+    const map = L.map("map").setView([15.95, 80.55], 9);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    const sensorLayer = L.layerGroup().addTo(map);
+    const routeLayer = L.layerGroup().addTo(map);
+
+    let currentGPS = null;
+    let lastRoads = [];
+    let routePoints = null;
+
+    const fromInput = document.getElementById("from");
+    const toInput = document.getElementById("to");
+    const result = document.getElementById("result");
+
+    function safeText(value) {
+      const el = document.createElement("span");
+      el.textContent = value == null ? "" : String(value);
+      return el.innerHTML;
+    }
+
+    function getRisk(road) {
+      const label = String(
+        road.risk || road.status || road.risk_level || "LOW"
+      ).toUpperCase();
+
+      if (["HIGH", "CRITICAL", "FLOOD", "FLOOD RISK"].includes(label)) {
+        return "HIGH";
+      }
+
+      if (["WARNING", "MEDIUM", "MODERATE"].includes(label)) {
+        return "WARNING";
+      }
+
+      return "LOW";
+    }
+
+    function setSensorCard(valueId, metaId, stateId, value, meta, state) {
+      document.getElementById(valueId).textContent = value;
+      document.getElementById(metaId).textContent = meta;
+      const badge = document.getElementById(stateId);
+      badge.textContent = state.text;
+      badge.className = "sensor-state " + (state.className || "");
+    }
+
+    function firstAvailable(object, keys) {
+      for (const key of keys) {
+        if (object && object[key] !== undefined && object[key] !== null && object[key] !== "") {
+          const number = Number(object[key]);
+          return Number.isFinite(number) ? number : object[key];
+        }
+      }
+      return null;
+    }
+
+    function deriveSensorStatus(road) {
+      const risk = getRisk(road);
+      if (risk === "HIGH") return { text: "HIGH RISK", className: "danger" };
+      if (risk === "WARNING") return { text: "WARNING", className: "warn" };
+      return { text: "NORMAL / LOW", className: "ok" };
+    }
+
+    function updateSensorCards(roads) {
+      // Prefer the most recently updated/first returned road record.
+      // The backend should return live ESP32 readings here for real hardware operation.
+      const latest = roads.find(item =>
+        firstAvailable(item, ["water_level_cm", "water_level", "waterLevelCm"]) !== null ||
+        firstAvailable(item, ["rainfall_mm_hr", "rainfall", "rainfall_mm", "rain_value", "rain"]) !== null ||
+        firstAvailable(item, ["flow_rate_lpm", "flow_rate", "flow_lpm", "flow"]) !== null
+      );
+
+      if (!latest) {
+        setSensorCard("waterValue", "waterMeta", "waterState", "— cm",
+          "No water-level field returned by /api/roads", { text: "NO DATA" });
+        setSensorCard("rainValue", "rainMeta", "rainState", "—",
+          "No rain field returned by /api/roads", { text: "NO DATA" });
+        setSensorCard("flowValue", "flowMeta", "flowState", "— L/min",
+          "Flow sensor is optional; no reading received", { text: "NO DATA" });
+        setSensorCard("deviceValue", "deviceMeta", "deviceState", "Online",
+          `${roads.length} monitored location(s) returned by backend`, { text: "API CONNECTED", className: "ok" });
+        return;
+      }
+
+      const water = firstAvailable(latest, ["water_level_cm", "water_level", "waterLevelCm"]);
+      const rain = firstAvailable(latest, ["rainfall_mm_hr", "rainfall_mm", "rainfall", "rain_value", "rain"]);
+      const flow = firstAvailable(latest, ["flow_rate_lpm", "flow_rate", "flow_lpm", "flow"]);
+      const riskStatus = deriveSensorStatus(latest);
+      const locationName = latest.location || latest.road_id || latest.device_id || "Latest monitored location";
+
+      setSensorCard("waterValue", "waterMeta", "waterState",
+        water === null ? "— cm" : `${water} cm`,
+        `${locationName}${water === null ? " · reading unavailable" : " · water-level reading"}`,
+        water === null ? { text: "NO DATA" } : riskStatus);
+
+      let rainText = "—";
+      if (rain !== null) {
+        if (typeof rain === "number") {
+          rainText = `${rain} mm/hr`;
+        } else {
+          rainText = String(rain);
+        }
+      }
+      setSensorCard("rainValue", "rainMeta", "rainState", rainText,
+        rain === null ? "No rainfall reading received" : `${locationName} · value from backend`,
+        rain === null ? { text: "NO DATA" } : riskStatus);
+
+      setSensorCard("flowValue", "flowMeta", "flowState",
+        flow === null ? "— L/min" : `${flow} L/min`,
+        flow === null ? "No flow reading; sensor is optional" : `${locationName} · flow reading`,
+        flow === null ? { text: "NOT INSTALLED / NO DATA" } : riskStatus);
+
+      const device = latest.device_id || latest.sensor_id || latest.id || "ESP32 device";
+      setSensorCard("deviceValue", "deviceMeta", "deviceState", "Online",
+        `${device} · backend returned sensor/road data`,
+        { text: "API CONNECTED", className: "ok" });
+    }
+
+    async function loadSensors() {
+      try {
+        const response = await fetch(`${API}/roads`);
+        if (!response.ok) throw new Error("Road API error");
+
+        const data = await response.json();
+        lastRoads = Array.isArray(data.roads) ? data.roads
+          : Array.isArray(data.sensors) ? data.sensors
+          : Array.isArray(data) ? data : [];
+
+        sensorLayer.clearLayers();
+
+        lastRoads.forEach(road => {
+          const lat = Number(road.latitude ?? road.lat);
+          const lng = Number(road.longitude ?? road.lng ?? road.lon);
+
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+          const risk = getRisk(road);
+          const color = risk === "HIGH" ? "#dc2626"
+            : risk === "WARNING" ? "#f59e0b" : "#16a34a";
+
+          const water = firstAvailable(road, ["water_level_cm", "water_level", "waterLevelCm"]);
+          const rain = firstAvailable(road, ["rainfall_mm_hr", "rainfall_mm", "rainfall", "rain_value", "rain"]);
+          const flow = firstAvailable(road, ["flow_rate_lpm", "flow_rate", "flow_lpm", "flow"]);
+
+          L.circleMarker([lat, lng], {
+            radius: 9,
+            color,
+            fillColor: color,
+            fillOpacity: 0.85,
+            weight: 2
+          }).bindPopup(
+            `<b>${safeText(road.location || road.road_id || road.device_id || "Sensor")}</b><br>` +
+            `Device: ${safeText(road.device_id || road.sensor_id || "Not provided")}<br>` +
+            `Risk: ${risk}<br>` +
+            `Water level: ${water === null ? "No data" : safeText(water) + " cm"}<br>` +
+            `Rain: ${rain === null ? "No data" : safeText(rain)}<br>` +
+            `Flow: ${flow === null ? "No data" : safeText(flow) + " L/min"}<br>` +
+            `Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}<br>` +
+            `<small>Values are from the backend response; verify they are live hardware readings.</small>`
+          ).addTo(sensorLayer);
+        });
+
+        updateSensorCards(lastRoads);
+        document.getElementById("connection").textContent = "Sensor API connected";
+      } catch (error) {
+        console.error(error);
+        document.getElementById("connection").textContent = "Sensor API unavailable";
+        setSensorCard("deviceValue", "deviceMeta", "deviceState", "Offline",
+          "Start the Flask backend and confirm GET /api/roads works at http://127.0.0.1:5000/api/roads",
+          { text: "DISCONNECTED", className: "danger" });
+      }
+    }
+
+    async function geocode(address) {
+      const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q="
+        + encodeURIComponent(address);
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error("Address search is currently unavailable.");
+      }
+
+      const data = await response.json();
+
+      if (!data.length) {
+        throw new Error("Location not found: " + address);
+      }
+
+      return {
+        lat: Number(data[0].lat),
+        lng: Number(data[0].lon),
+        name: data[0].display_name
+      };
+    }
+
+    async function findRoute() {
+      const fromText = fromInput.value.trim();
+      const toText = toInput.value.trim();
+
+      if (!fromText || !toText) {
+        result.textContent = "Please enter both starting point and destination.";
+        return;
+      }
+
+      const button = document.getElementById("findButton");
+      button.disabled = true;
+      button.textContent = "Finding route...";
+      result.textContent = "Searching locations and calculating route...";
+
+      try {
+        const start = fromText === "__CURRENT_GPS__"
+          ? currentGPS : await geocode(fromText);
+
+        if (!start) {
+          throw new Error("Please allow GPS access or enter a starting address.");
+        }
+
+        const end = await geocode(toText);
+
+        // Public OSRM routing service returns a road route.
+        const routeURL =
+          `https://router.project-osrm.org/route/v1/driving/` +
+          `${start.lng},${start.lat};${end.lng},${end.lat}` +
+          `?overview=full&geometries=geojson&steps=true&alternatives=true`;
+
+        const response = await fetch(routeURL);
+        if (!response.ok) throw new Error("Routing service unavailable.");
+
+        const data = await response.json();
+
+        if (data.code !== "Ok" || !data.routes.length) {
+          throw new Error("No driving route was found between these locations.");
+        }
+
+        // OSRM returns the fastest route first and may return alternatives.
+        // Score alternatives using nearby backend monitoring points. This is
+        // a prototype heuristic, not a guarantee that a route is flood-safe.
+        function routeRiskScore(routeCandidate) {
+          const candidatePoints = routeCandidate.geometry.coordinates.map(
+            point => [point[1], point[0]]
+          );
+          let score = 0;
+          lastRoads.forEach(road => {
+            const lat = Number(road.latitude ?? road.lat);
+            const lng = Number(road.longitude ?? road.lng ?? road.lon);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+            const close = candidatePoints.some(point =>
+              map.distance(point, [lat, lng]) <= 500
+            );
+            if (close) {
+              const risk = getRisk(road);
+              score += risk === "HIGH" ? 100 : risk === "WARNING" ? 25 : 0;
+            }
+          });
+          return score;
+        }
+
+        const scoredRoutes = data.routes.map((candidate, index) => ({
+          candidate,
+          index,
+          score: routeRiskScore(candidate)
+        }));
+        scoredRoutes.sort((a, b) => a.score - b.score ||
+          a.candidate.duration - b.candidate.duration);
+        const selected = scoredRoutes[0];
+        const route = selected.candidate;
+        const coordinates = route.geometry.coordinates.map(
+          point => [point[1], point[0]]
+        );
+
+        routeLayer.clearLayers();
+
+        L.polyline(coordinates, {
+          color: "#1976d2",
+          weight: 6,
+          opacity: 0.85
+        }).addTo(routeLayer);
+
+        L.marker([start.lat, start.lng])
+          .bindPopup("Starting point")
+          .addTo(routeLayer);
+
+        L.marker([end.lat, end.lng])
+          .bindPopup("Destination")
+          .addTo(routeLayer);
+
+        routePoints = { start, end, coordinates };
+
+        map.fitBounds(L.latLngBounds(coordinates), {
+          padding: [35, 35]
+        });
+
+        const distanceKm = (route.distance / 1000).toFixed(1);
+        const minutes = Math.round(route.duration / 60);
+
+        // Report sensor risk only where a monitoring location is close
+        // to the route. This is not a full road-network risk analysis.
+        const nearby = lastRoads.filter(road => {
+          const lat = Number(road.latitude);
+          const lng = Number(road.longitude);
+
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+
+          return coordinates.some(point =>
+            map.distance(point, [lat, lng]) <= 500
+          );
+        });
+
+        const high = nearby.filter(r => getRisk(r) === "HIGH").length;
+        const warning = nearby.filter(r => getRisk(r) === "WARNING").length;
+
+        let riskMessage = "No nearby sensor has reported a high-risk status.";
+        if (high > 0) {
+          riskMessage =
+            `Warning: ${high} nearby monitoring point(s) report HIGH risk. ` +
+            "This route has not been verified as safe.";
+        } else if (warning > 0) {
+          riskMessage =
+            `${warning} nearby monitoring point(s) report WARNING. ` +
+            "Use caution; road safety is not verified.";
+        }
+
+        const routeChoiceMessage = selected.score === 0
+          ? "Selected the lowest-risk available route based on current monitored points."
+          : `Selected the lowest-risk option found, but its risk score is ${selected.score}; no alternative was fully clear.`;
+        const alternativesCount = data.routes.length;
+
+        result.innerHTML =
+          `<strong>Route found</strong><br>` +
+          `Distance: ${distanceKm} km<br>` +
+          `Estimated driving time: ${minutes} minutes<br>` +
+          `Route options checked: ${alternativesCount}<br>` +
+          `Nearby monitored points: ${nearby.length}<br><br>` +
+          `<span class="route-line">${safeText(routeChoiceMessage)}</span><br>` +
+          `<span class="route-line">${safeText(riskMessage)}</span><br>` +
+          `<small>Prototype only: route alternatives depend on the public routing service, and sensor proximity is an approximate risk check—not a guarantee of flood safety.</small>`;
+
+      } catch (error) {
+        console.error(error);
+        result.textContent = error.message ||
+          "Unable to calculate route. Please try again.";
+      } finally {
+        button.disabled = false;
+        button.textContent = "Find Safer Route →";
+      }
+    }
+
+    document.getElementById("gpsButton").addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        result.textContent = "Your browser does not support GPS location.";
+        return;
+      }
+
+      result.textContent = "Requesting your location permission...";
+
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          currentGPS = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+
+          fromInput.value = "__CURRENT_GPS__";
+          fromInput.placeholder = "Using your current GPS location";
+
+          map.setView([currentGPS.lat, currentGPS.lng], 14);
+
+          L.circleMarker([currentGPS.lat, currentGPS.lng], {
+            radius: 8,
+            color: "#1976d2",
+            fillColor: "#1976d2",
+            fillOpacity: 1
+          }).bindPopup("Your current GPS location")
+            .addTo(routeLayer);
+
+          result.textContent =
+            "Current location captured. Enter a destination and find a route.";
+        },
+        error => {
+          result.textContent =
+            "Unable to get GPS location. Allow location access in your browser or enter an address manually.";
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+      );
+    });
+
+    document.getElementById("swapButton").addEventListener("click", () => {
+      const previousFrom = fromInput.value;
+      fromInput.value = toInput.value;
+      toInput.value = previousFrom;
+    });
+
+    document.getElementById("findButton").addEventListener("click", findRoute);
+
+    // Load simulated sensor markers and refresh them periodically.
+    loadSensors();
+    setInterval(loadSensors, 5000);
+
+    // Fit the initial view to the monitored locations.
+    setTimeout(() => map.invalidateSize(), 300);
+  </script>
+</body>
+</html>
